@@ -1,6 +1,6 @@
 # Bouquet Auth
 
-Bouquet Auth expose an http authentication API for Bouquet. Integrates with Bouquet, Bouquet Auth lets you manage users, roles and permisions.
+Bouquet Auth exposes an http authentication Web App (login form) for Bouquet.
 
 ## About Bouquet
 
