@@ -69,7 +69,7 @@
 					<!-- application path always starts with / -->
 					<path>/admin/auth</path>
 					<systemProperties>
-						<bouquet.auth.config>${project.basedir}/config</bouquet.auth.config>
+						<config.file>${project.basedir}/config/auth-webapp.xml</config.file>
 					</systemProperties>
 				</configuration>
 			</plugin>

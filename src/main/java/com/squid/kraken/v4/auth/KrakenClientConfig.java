@@ -36,7 +36,7 @@ import org.apache.commons.logging.LogFactory;
  * Class to manage webapp configuration.<br>
  * Properties will be loaded from the following xml file (by priority order) :
  * <ol>
- * <li>[user.home]/explorer_webapp-dev.xml</li>
+ * <li>[config.file]</li>
  * <li>[user.home]/explorer_webapp.xml</li>
  * </ol>
  */
@@ -44,7 +44,8 @@ public class KrakenClientConfig {
 
 	protected static final Log logger = LogFactory
 			.getLog(KrakenClientConfig.class);
-
+	
+	public static String CONFIG_FILE = "config.file";
 	public static String CONFIG_FILEPATH = "explorer_webapp.xml";
 	public static String CONFIG_FILEPATH_DEV = "explorer_webapp-dev.xml";
 
@@ -71,8 +72,14 @@ public class KrakenClientConfig {
 	 */
 	public static synchronized String get(String key, String defaultValue) {
 		String value;
+		String filePath = System.getProperty(CONFIG_FILE);
+		if (filePath != null) {
+			// try using bouquet.auth.config
+			initPropertiesFromFile(filePath);
+		}
 		if (props == null) {
-			initProperties();
+			// try using user.home
+			initProperties(System.getProperty("user.home"));
 		}
 		value = props.getProperty(key);
 		if (value == null) {
@@ -80,22 +87,38 @@ public class KrakenClientConfig {
 		}
 		return value;
 	}
+	
+	private static void initPropertiesFromFile(String path) {
+		props = new Properties();
 
-	private static void initProperties() {
+		// load the config file from user.home
+		FileInputStream is;
+		try {
+			is = new FileInputStream(path);
+			logger.warn("Loading config from : " + path);
+			load(is, props);
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("Configuration file not found : "
+					+ path);
+		}
+	}
+
+	@Deprecated
+	private static void initProperties(String filePath) {
 		props = new Properties();
 		String path = null;
 
 		// load the config file from user.home
 		FileInputStream is;
 		try {
-			path = System.getProperty("user.home") + File.separatorChar
+			path = filePath + File.separatorChar
 					+ CONFIG_FILEPATH_DEV;
 			is = new FileInputStream(path);
 			logger.warn("Loading config from : " + path);
 			load(is, props);
 		} catch (FileNotFoundException e) {
 			try {
-				path = System.getProperty("user.home") + File.separatorChar
+				path = filePath + File.separatorChar
 						+ CONFIG_FILEPATH;
 				is = new FileInputStream(path);
 				logger.warn("Loading config from : " + path);
