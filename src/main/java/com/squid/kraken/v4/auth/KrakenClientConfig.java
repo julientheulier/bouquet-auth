@@ -72,14 +72,16 @@ public class KrakenClientConfig {
 	 */
 	public static synchronized String get(String key, String defaultValue) {
 		String value;
-		String filePath = System.getProperty(CONFIG_FILE);
-		if (filePath != null) {
-			// try using bouquet.auth.config
-			initPropertiesFromFile(filePath);
-		}
 		if (props == null) {
-			// try using user.home
-			initProperties(System.getProperty("user.home"));
+			props = new Properties();
+			String filePath = System.getProperty(CONFIG_FILE);
+			if (filePath != null) {
+				// try using bouquet.auth.config
+				initPropertiesFromFile(filePath);
+			} else {
+				// try using user.home
+				initProperties(System.getProperty("user.home"));
+			}
 		}
 		value = props.getProperty(key);
 		if (value == null) {
@@ -89,8 +91,6 @@ public class KrakenClientConfig {
 	}
 	
 	private static void initPropertiesFromFile(String path) {
-		props = new Properties();
-
 		// load the config file from user.home
 		FileInputStream is;
 		try {
@@ -105,7 +105,6 @@ public class KrakenClientConfig {
 
 	@Deprecated
 	private static void initProperties(String filePath) {
-		props = new Properties();
 		String path = null;
 
 		// load the config file from user.home
