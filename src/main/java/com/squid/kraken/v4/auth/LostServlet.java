@@ -23,10 +23,7 @@
  *******************************************************************************/
 package com.squid.kraken.v4.auth;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ConnectException;
 import java.net.URISyntaxException;
 
 import javax.servlet.RequestDispatcher;
@@ -37,21 +34,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
 
 /**
  * A Servlet implementing Lost password procedure.<br>
  */
 @SuppressWarnings("serial")
 public class LostServlet extends HttpServlet {
+
+	private static final String AN_ERROR_OCCURRED = "An error occurred";
 
 	private static final String RESPONSE_TYPE = "response_type";
 
@@ -68,11 +62,6 @@ public class LostServlet extends HttpServlet {
 	private static final String CLIENT_ID = "client_id";
 
 	private static final String CUSTOMER_ID = "customerId";
-
-	/**
-	 * Key for client information
-	 */
-	private static final String STRING_XFF_HEADER = "X-Forwarded-For";
 
 	final Logger logger = LoggerFactory.getLogger(LostServlet.class);
 
@@ -138,109 +127,55 @@ public class LostServlet extends HttpServlet {
 	private void proceed(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException,
 			URISyntaxException {
-		String customerId = request.getParameter(CUSTOMER_ID);
-
-		// create a POST method to execute the login request
-
-		URIBuilder builder = new URIBuilder(privateServerURL
-				+ "/rs/reset-user-pwd");
-
-		if (StringUtils.isNotBlank(customerId)) {
-			builder.addParameter(CUSTOMER_ID, customerId);
-		}
-		if (request.getParameter(CLIENT_ID) != null) {
-			builder.addParameter("clientId", request.getParameter(CLIENT_ID));
-		}
-		String linkUrl = KrakenClientConfig
-				.get("console.url",
-						"https://api.squidsolutions.com/release/admin/console/index.html")
-				+ "?access_token={access_token}#!user";
-		builder.addParameter("link_url", linkUrl);
-
 		// get login and pwd either from the request or from the session
 		String email = request.getParameter(EMAIL);
 
 		if (email == null) {
 			show(request, response);
 		} else {
+			
+			String customerId = request.getParameter(CUSTOMER_ID);
+			String clientId = request.getParameter(CLIENT_ID);
+
+			// create a POST method to execute the login request
+
+			URIBuilder builder = new URIBuilder(privateServerURL
+					+ "/rs/reset-user-pwd");
+
+			String linkUrl = KrakenClientConfig
+					.get("console.url",
+							"https://api.squidsolutions.com/release/admin/console/index.html")
+					+ "?access_token={access_token}#!user";
+			builder.addParameter("link_url", linkUrl);
 			builder.addParameter(EMAIL, email);
-
-			// set client information to the header
-			String reqXFF = request.getHeader(STRING_XFF_HEADER);
-			String postXFF;
-			if (reqXFF != null) {
-				// X-Forwarded-For header already exists in the request
-				logger.info(STRING_XFF_HEADER + " : " + reqXFF);
-				if (reqXFF.length() > 0) {
-					// just add the remoteHost to it
-					postXFF = reqXFF + ", " + request.getRemoteHost();
-				} else {
-					postXFF = request.getRemoteHost();
-				}
-			} else {
-				postXFF = request.getRemoteHost();
+			
+			if (StringUtils.isNotBlank(customerId)) {
+				builder.addParameter(CUSTOMER_ID, customerId);
 			}
-
-			HttpGet get = new HttpGet(builder.build());
-			// add a new X-Forwarded-For header containing the remoteHost
-			get.addHeader(STRING_XFF_HEADER, postXFF);
+			if (clientId != null) {
+				builder.addParameter("clientId", clientId);
+			}
 
 			// execute the login request
-			HttpResponse executeCode;
 			try {
-				HttpClient client = HttpClientBuilder.create().build();
-				executeCode = client.execute(get);
-			} catch (ConnectException e) { // Authentication server unavailable
-				logger.error(e.getLocalizedMessage());
+				HttpGet req = new HttpGet(builder.build());
+				Message message = RequestHelper.processRequest(Message.class, request, req);
+				request.setAttribute("message", message.getMessage());
+				show(request, response);
+			} catch (ServerUnavailableException e1) {
+				logger.error(e1.getLocalizedMessage());
 				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 				show(request, response);
-				return;
-			}
-
-			// code 500 returns by Kraken (for exemple if mongo is unavailabbe)
-			if (executeCode.getStatusLine().getStatusCode() == 500) {
-				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
-				show(request, response);
-				return;
-			}
-
-			// process the result
-			
-			BufferedReader rd = new BufferedReader(new InputStreamReader(
-					executeCode.getEntity().getContent()));
-
-			StringBuffer resultBuffer = new StringBuffer();
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				resultBuffer.append(line);
-			}
-			String result = resultBuffer.toString();
-
-			Gson gson = new Gson();
-			if (executeCode.getStatusLine().getStatusCode() != 200) {
-				logger.info("Error : " + get.getURI() + " resulted in : "
-						+ result);
-				try {
-					WebServicesException exception = (WebServicesException) gson
-							.fromJson(result, WebServicesException.class);
-					request.setAttribute(ERROR, exception.getError());
-				} catch (Exception e) {
-					request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
+			} catch (ServiceException e1) {
+				WebServicesException wsException = e1.getWsException();
+				String error;
+				if (wsException == null) {
+					error = AN_ERROR_OCCURRED;
+				} else {
+					error = wsException.getError();
 				}
-				// forward to input page
+				request.setAttribute(ERROR, error);
 				show(request, response);
-			} else {
-				// forward to input page displaying ok message
-				try {
-					Message fromJson = gson.fromJson(result, Message.class);
-					request.setAttribute("message", fromJson.getMessage());
-					show(request, response);
-				} catch (Exception e) {
-					logger.info("Error : " + get.getURI() + " resulted in : "
-							+ result);
-					request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
-					show(request, response);
-				}
 			}
 		}
 	}
