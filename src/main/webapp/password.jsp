@@ -7,7 +7,7 @@
 <%@page import="java.net.URLEncoder"%><html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Bouquet lost password</title>
+    <title>Bouquet password update</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Le styles -->
@@ -24,61 +24,46 @@
 
   <body>
 
-<c:set var="cid">
-	${param.customerId}
-</c:set>
-<c:if test="${!empty customerId}">
-<c:set var="cid">
-	${customerId}
-</c:set>
-</c:if>
-
-<c:set var="clid">
-	${param.client_id}
-</c:set>
-<c:if test="${!empty client_id}">
-<c:set var="clid">
-	${client_id}
-</c:set>
-</c:if>
-
 <div class="container">
 <br></br>
 </div>
 
-<form class="sq-form acc_req_form" action="./lost" method="post">
+
 	<img src="bouquet-logo.png">
 
-	<h2 class="form-signin-heading">Reset Password</h2>
+	<h2 class="form-signin-heading">Change Password</h2>
 
 	<c:if test="${error != null}">
         <p class="text-danger">Error : ${error}</p>
     </c:if>
     
     <c:if test="${krakenUnavailable != null}">
-        <p class="text-danger">Authentication server unavailable, please retry later.</p>
+        <p class="text-danger">Server unavailable, please retry later.</p>
     </c:if>
     
     <c:if test="${message != null}">
         <p class="text-warning">${message}</p>
     </c:if>
 
-	<c:if test="${message == null}">
-		<input type="hidden" name="customerId" value="${cid}" id="customerId"></input>
-	    
-	   	<c:if test="${!empty clid}">
-			<input type="hidden" name="client_id" value="${clid}"></input>
-		</c:if>
-		
-	
-		<input type="email" name="email" class="input-block-level" placeholder="Email">
-	
-		<div class="form-actions">
-			<button class="btn btn-primary" name="submit" type="submit">Send reset password request</button>
+	<c:if test="${(message == null)}">
+	<form class="sq-form acc_req_form" action="./password" method="post">
+		<input type="hidden" name="access_token" value="${access_token}" id="access_token"></input>
+		<input type="hidden" name="userId" value="${user.id.userId}" id="userId"></input>
+		<input type="hidden" name="userLogin" value="${user.login}" id="userLogin"></input>
+		<input type="hidden" name="userEmail" value="${user.email}" id="userEmail"></input>
+		<input type="hidden" name="access_token" value="${access_token}" id="access_token"></input>
+		<div>
+		Please set a new password for the account : ${user.email}
 		</div>
+		<input type="password" name="password" class="input-block-level" placeholder="New password">
+		<div class="form-actions">
+			<button class="btn btn-primary" name="submit" type="submit">Submit</button>
+		</div>
+		
+	</form>
 	</c:if>
 		
-</form>
+
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>

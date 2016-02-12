@@ -162,20 +162,20 @@ public class OAuth2LoginServlet extends HttpServlet {
 
 		// create a POST method to execute the login request
 		HttpPost post;
-		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+		List<NameValuePair> values = new ArrayList<NameValuePair>();
 		if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
 			post = new HttpPost(privateServerURL + V4_RS_AUTH_TOKEN);
 		} else {
 			post = new HttpPost(privateServerURL + V4_RS_AUTH_CODE);
 		}
 		if (StringUtils.isNotBlank(customerId)) {
-			urlParameters.add(new BasicNameValuePair(CUSTOMER_ID, customerId));
+			values.add(new BasicNameValuePair(CUSTOMER_ID, customerId));
 		}
 		if (request.getParameter(CLIENT_ID) != null) {
-			urlParameters.add(new BasicNameValuePair(CLIENT_ID, request.getParameter(CLIENT_ID)));
+			values.add(new BasicNameValuePair(CLIENT_ID, request.getParameter(CLIENT_ID)));
 		}
 		if (request.getParameter(REDIRECT_URI) != null) {
-			urlParameters.add(new BasicNameValuePair(REDIRECT_URI,
+			values.add(new BasicNameValuePair(REDIRECT_URI,
 					request.getParameter(REDIRECT_URI)));
 		}
 
@@ -195,9 +195,9 @@ public class OAuth2LoginServlet extends HttpServlet {
 		if ((login == null) || (password == null)) {
 			showLogin(request, response);
 		} else {
-			urlParameters.add(new BasicNameValuePair(LOGIN, login));
-			urlParameters.add(new BasicNameValuePair(PASSWORD, password));
-			post.setEntity(new UrlEncodedFormEntity(urlParameters));
+			values.add(new BasicNameValuePair(LOGIN, login));
+			values.add(new BasicNameValuePair(PASSWORD, password));
+			post.setEntity(new UrlEncodedFormEntity(values));
 
 			try {
 				// execute the login request
