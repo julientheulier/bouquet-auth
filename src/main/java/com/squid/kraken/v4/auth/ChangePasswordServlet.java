@@ -33,45 +33,40 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.squid.kraken.v4.auth.model.User;
+import com.squid.kraken.v4.auth.model.UserPK;
 
 /**
  * A Servlet implementing Lost password procedure.<br>
  */
 @SuppressWarnings("serial")
-public class LostServlet extends HttpServlet {
+public class ChangePasswordServlet extends HttpServlet {
 
 	private static final String AN_ERROR_OCCURRED = "An error occurred";
-
-	private static final String RESPONSE_TYPE = "response_type";
-
-	private static final String LOST_JSP = "/lost.jsp";
 
 	private static final String ERROR = "error";
 
 	private static final String KRAKEN_UNAVAILABLE = "krakenUnavailable";
 
-	private static final String REDIRECT_URI = "redirect_uri";
-
-	private static final String EMAIL = "email";
-
-	private static final String CLIENT_ID = "client_id";
-
-	private static final String CUSTOMER_ID = "customerId";
-
-	final Logger logger = LoggerFactory.getLogger(LostServlet.class);
+	final Logger logger = LoggerFactory.getLogger(ChangePasswordServlet.class);
 
 	private String privateServerURL;
 
 	@Override
 	protected void service(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException {
-		if (request.getParameter(EMAIL) != null) {
-			// perform auth
+		String password = request.getParameter("password");
+		if (password != null) {
 			try {
 				proceed(request, response);
 			} catch (URISyntaxException e) {
@@ -79,7 +74,7 @@ public class LostServlet extends HttpServlet {
 				show(request, response);
 			}
 		} else {
-			// forward to login page
+			// forward to page
 			show(request, response);
 		}
 	}
@@ -95,24 +90,35 @@ public class LostServlet extends HttpServlet {
 	private void show(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		request.setAttribute(CUSTOMER_ID, request.getParameter(CUSTOMER_ID));
-
-		String redirectUri = request.getParameter(REDIRECT_URI);
-		if (redirectUri == null) {
-			redirectUri = KrakenClientConfig.getConsoleURL();
+		// execute the login request
+		try {
+			URIBuilder builder = new URIBuilder(privateServerURL + "/rs/user");
+			builder.addParameter("access_token",
+					request.getParameter("access_token"));
+			HttpGet req = new HttpGet(builder.build());
+			User user = RequestHelper.processRequest(User.class, request, req);
+			request.setAttribute("user", user);
+			request.setAttribute("access_token",
+					request.getParameter("access_token"));
+		} catch (ServerUnavailableException e1) {
+			logger.error(e1.getLocalizedMessage());
+			request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
+		} catch (URISyntaxException e) {
+			logger.error(e.getLocalizedMessage());
+			request.setAttribute(ERROR, Boolean.TRUE);
+		} catch (ServiceException e) {
+			WebServicesException wsException = e.getWsException();
+			String error;
+			if (wsException == null) {
+				error = AN_ERROR_OCCURRED;
+			} else {
+				error = wsException.getError();
+			}
+			logger.error(error);
+			request.setAttribute(ERROR, error);
 		}
-		request.setAttribute(REDIRECT_URI, redirectUri);
-		request.setAttribute(RESPONSE_TYPE, request.getParameter(RESPONSE_TYPE));
-
-		String clientId = request.getParameter(CLIENT_ID);
-		if (clientId == null) {
-			clientId = KrakenClientConfig.get("signin.default.clientid",
-					"admin_console");
-		}
-		request.setAttribute(CLIENT_ID, clientId);
-
 		RequestDispatcher rd = getServletContext().getRequestDispatcher(
-				LOST_JSP);
+				"/password.jsp");
 		rd.forward(request, response);
 	}
 
@@ -127,56 +133,50 @@ public class LostServlet extends HttpServlet {
 	private void proceed(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException,
 			URISyntaxException {
-		// get login and pwd either from the request or from the session
-		String email = request.getParameter(EMAIL);
+		
+		UserPK id = new UserPK();
+		id.setUserId(request.getParameter("userId"));
+		User user = new User(id, request.getParameter("userLogin"));
+		user.setEmail(request.getParameter("userEmail"));
+		user.setPassword(request.getParameter("password"));
 
-		if (email == null) {
+		// create a POST method to execute the change password request
+		URIBuilder builder = new URIBuilder(privateServerURL + "/rs/users/");
+		String token = request.getParameter("access_token");
+		builder.addParameter("access_token", token);
+
+		// execute the login request
+		try {
+			HttpPost req = new HttpPost(builder.build());
+			Gson gson = new Gson();
+			String json = gson.toJson(user);
+			StringEntity stringEntity = new StringEntity(json);
+			stringEntity.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE,
+					"application/json"));
+			req.setEntity(stringEntity);
+			req.setHeader("Content-type", "application/json");
+			user = RequestHelper.processRequest(User.class, request, req);
+			request.setAttribute("message", "Password updated");
+			request.setAttribute("user", user);
+			RequestDispatcher rd = getServletContext().getRequestDispatcher(
+					"/password.jsp");
+			rd.forward(request, response);
+		} catch (ServerUnavailableException e1) {
+			logger.error(e1.getLocalizedMessage());
+			request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 			show(request, response);
-		} else {
-			
-			String customerId = request.getParameter(CUSTOMER_ID);
-			String clientId = request.getParameter(CLIENT_ID);
-
-			// create a POST method to execute the login request
-
-			URIBuilder builder = new URIBuilder(privateServerURL
-					+ "/admin/reset-user-pwd");
-
-			String linkUrl = KrakenClientConfig
-					.get("public.url")
-					+ "/password?access_token={access_token}";
-			builder.addParameter("link_url", linkUrl);
-			builder.addParameter(EMAIL, email);
-			
-			if (StringUtils.isNotBlank(customerId)) {
-				builder.addParameter(CUSTOMER_ID, customerId);
+		} catch (ServiceException e1) {
+			WebServicesException wsException = e1.getWsException();
+			String error;
+			if (wsException == null) {
+				error = AN_ERROR_OCCURRED;
+			} else {
+				error = wsException.getError();
 			}
-			if (clientId != null) {
-				builder.addParameter("clientId", clientId);
-			}
-
-			// execute the login request
-			try {
-				HttpGet req = new HttpGet(builder.build());
-				Message message = RequestHelper.processRequest(Message.class, request, req);
-				request.setAttribute("message", message.getMessage());
-				show(request, response);
-			} catch (ServerUnavailableException e1) {
-				logger.error(e1.getLocalizedMessage());
-				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
-				show(request, response);
-			} catch (ServiceException e1) {
-				WebServicesException wsException = e1.getWsException();
-				String error;
-				if (wsException == null) {
-					error = AN_ERROR_OCCURRED;
-				} else {
-					error = wsException.getError();
-				}
-				request.setAttribute(ERROR, error);
-				show(request, response);
-			}
+			request.setAttribute(ERROR, error);
+			show(request, response);
 		}
+
 	}
 
 	@Override

@@ -3,7 +3,7 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
-	<display-name>Archetype Created Web Application</display-name>
+	<display-name>Bouquet Auth</display-name>
 	
 	<servlet>
 		<servlet-name>ConfigServlet</servlet-name>
@@ -21,6 +21,11 @@
 		<servlet-name>lost</servlet-name>
 		<servlet-class>com.squid.kraken.v4.auth.LostServlet</servlet-class>
 	</servlet>
+	
+		<servlet>
+		<servlet-name>password</servlet-name>
+		<servlet-class>com.squid.kraken.v4.auth.ChangePasswordServlet</servlet-class>
+	</servlet>
 
 	<servlet-mapping>
 		<servlet-name>oauth</servlet-name>
@@ -35,5 +40,10 @@
 	<servlet-mapping>
 		<servlet-name>lost</servlet-name>
 		<url-pattern>/lost</url-pattern>
+	</servlet-mapping>
+	
+		<servlet-mapping>
+		<servlet-name>password</servlet-name>
+		<url-pattern>/password</url-pattern>
 	</servlet-mapping>
 </web-app>

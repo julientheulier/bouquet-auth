@@ -23,10 +23,7 @@
  *******************************************************************************/
 package com.squid.kraken.v4.auth;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,17 +37,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
 
 /**
  * A Servlet implementing OAuth 2.0 authentication.<br>
@@ -94,11 +86,6 @@ public class OAuth2LoginServlet extends HttpServlet {
 	private static final String ACCESS_TOKEN_PARAM_PATTERN = "${access_token}";
 
 	private static final String AUTH_CODE_PARAM_PATTERN = "${auth_code}";
-
-	/**
-	 * Key for client information
-	 */
-	private static final String STRING_XFF_HEADER = "X-Forwarded-For";
 
 	private static final String CUSTOMERS_LIST = "customers";
 
@@ -175,20 +162,20 @@ public class OAuth2LoginServlet extends HttpServlet {
 
 		// create a POST method to execute the login request
 		HttpPost post;
-		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+		List<NameValuePair> values = new ArrayList<NameValuePair>();
 		if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
 			post = new HttpPost(privateServerURL + V4_RS_AUTH_TOKEN);
 		} else {
 			post = new HttpPost(privateServerURL + V4_RS_AUTH_CODE);
 		}
 		if (StringUtils.isNotBlank(customerId)) {
-			urlParameters.add(new BasicNameValuePair(CUSTOMER_ID, customerId));
+			values.add(new BasicNameValuePair(CUSTOMER_ID, customerId));
 		}
 		if (request.getParameter(CLIENT_ID) != null) {
-			urlParameters.add(new BasicNameValuePair(CLIENT_ID, request.getParameter(CLIENT_ID)));
+			values.add(new BasicNameValuePair(CLIENT_ID, request.getParameter(CLIENT_ID)));
 		}
 		if (request.getParameter(REDIRECT_URI) != null) {
-			urlParameters.add(new BasicNameValuePair(REDIRECT_URI,
+			values.add(new BasicNameValuePair(REDIRECT_URI,
 					request.getParameter(REDIRECT_URI)));
 		}
 
@@ -208,67 +195,57 @@ public class OAuth2LoginServlet extends HttpServlet {
 		if ((login == null) || (password == null)) {
 			showLogin(request, response);
 		} else {
-			urlParameters.add(new BasicNameValuePair(LOGIN, login));
-			urlParameters.add(new BasicNameValuePair(PASSWORD, password));
+			values.add(new BasicNameValuePair(LOGIN, login));
+			values.add(new BasicNameValuePair(PASSWORD, password));
+			post.setEntity(new UrlEncodedFormEntity(values));
 
-			// set client information to the header
-			String reqXFF = request.getHeader(STRING_XFF_HEADER);
-			String postXFF;
-			if (reqXFF != null) {
-				// X-Forwarded-For header already exists in the request
-				logger.info(STRING_XFF_HEADER + " : " + reqXFF);
-				if (reqXFF.length() > 0) {
-					// just add the remoteHost to it
-					postXFF = reqXFF + ", " + request.getRemoteHost();
-				} else {
-					postXFF = request.getRemoteHost();
-				}
-			} else {
-				postXFF = request.getRemoteHost();
-			}
-			post.setEntity(new UrlEncodedFormEntity(urlParameters));
-			
-			// add a new X-Forwarded-For header containing the remoteHost
-			post.addHeader(STRING_XFF_HEADER, postXFF);
-
-			// execute the login request
-			HttpResponse executeCode;
 			try {
-				HttpClient client = HttpClientBuilder.create().build();
-				executeCode = client.execute(post);
-			} catch (ConnectException e) { 
+				// execute the login request
+				Object auth = RequestHelper.processRequest(AuthCode.class, request, post);
+				
+				// perform redirection
+				String redirectUrl = request.getParameter(REDIRECT_URI).trim();
+				// T489 remove any trailing #
+				if (redirectUrl.endsWith("#")) {
+					redirectUrl = redirectUrl.substring(0, redirectUrl.length()-1);
+				}
+				if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
+					// token type
+					AccessToken token = (AccessToken) auth;
+					String tokenId = token.getId().getTokenId();
+					// redirect URL
+					if (redirectUrl.contains(ACCESS_TOKEN_PARAM_PATTERN)) {
+						// replace access_token parameter pattern
+						redirectUrl = StringUtils.replace(redirectUrl,
+								ACCESS_TOKEN_PARAM_PATTERN, tokenId);
+					} else {
+						// append access_token anchor
+						redirectUrl += (!redirectUrl.contains("?")) ? "?" : "&";
+						redirectUrl += ACCESS_TOKEN + "=" + tokenId;
+					}
+				} else {
+					// auth code type
+					AuthCode codeObj = (AuthCode) auth;
+					String code = codeObj.getCode();
+					if (redirectUrl.contains(AUTH_CODE_PARAM_PATTERN)) {
+						// replace code parameter pattern
+						redirectUrl = StringUtils.replace(redirectUrl,
+								AUTH_CODE_PARAM_PATTERN, code);
+					} else {
+						// append code param
+						redirectUrl += (!redirectUrl.contains("?")) ? "?" : "&";
+						redirectUrl += AUTH_CODE + "=" + code;
+					}
+				}
+				response.sendRedirect(redirectUrl);
+			} catch (ServerUnavailableException e1) {
 				// Authentication server unavailable
-				logger.error(e.getLocalizedMessage());
+				logger.error(e1.getLocalizedMessage());
 				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 				showLogin(request, response);
 				return;
-			}
-
-			// code 500 returns by Kraken (for exemple if mongo is unavailabbe)
-			if (executeCode.getStatusLine().getStatusCode() == 500) {
-				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
-				showLogin(request, response);
-				return;
-			}
-
-			// process the result
-			BufferedReader rd = new BufferedReader(new InputStreamReader(
-					executeCode.getEntity().getContent()));
-
-			StringBuffer resultBuffer = new StringBuffer();
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				resultBuffer.append(line);
-			}
-			String result = resultBuffer.toString();
-
-			Gson gson = new Gson();
-
-			if (executeCode.getStatusLine().getStatusCode() != 200) {
-				logger.info("Login error : " + post.getURI()
-						+ " resulted in : " + result);
-				WebServicesException exception = (WebServicesException) gson
-						.fromJson(result, WebServicesException.class);
+			} catch (ServiceException e2) {
+				WebServicesException exception = e2.getWsException();
 				if (exception != null) {
 					if (exception.getCustomers() != null) {
 						// multiple customers found
@@ -291,44 +268,9 @@ public class OAuth2LoginServlet extends HttpServlet {
 				}
 				// forward to login page
 				showLogin(request, response);
-			} else {
-				// perform redirection
-				String redirectUrl = request.getParameter(REDIRECT_URI).trim();
-				// T489 remove any trailing #
-				if (redirectUrl.endsWith("#")) {
-					redirectUrl = redirectUrl.substring(0, redirectUrl.length()-1);
-				}
-				if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
-					// token type
-					AccessToken token = gson
-							.fromJson(result, AccessToken.class);
-					String tokenId = token.getId().getTokenId();
-					// redirect URL
-					if (redirectUrl.contains(ACCESS_TOKEN_PARAM_PATTERN)) {
-						// replace access_token parameter pattern
-						redirectUrl = StringUtils.replace(redirectUrl,
-								ACCESS_TOKEN_PARAM_PATTERN, tokenId);
-					} else {
-						// append access_token anchor
-						redirectUrl += (!redirectUrl.contains("?")) ? "?" : "&";
-						redirectUrl += ACCESS_TOKEN + "=" + tokenId;
-					}
-				} else {
-					// auth code type
-					AuthCode codeObj = gson.fromJson(result, AuthCode.class);
-					String code = codeObj.getCode();
-					if (redirectUrl.contains(AUTH_CODE_PARAM_PATTERN)) {
-						// replace code parameter pattern
-						redirectUrl = StringUtils.replace(redirectUrl,
-								AUTH_CODE_PARAM_PATTERN, code);
-					} else {
-						// append code param
-						redirectUrl += (!redirectUrl.contains("?")) ? "?" : "&";
-						redirectUrl += AUTH_CODE + "=" + code;
-					}
-				}
-				response.sendRedirect(redirectUrl);
+				return;
 			}
+
 		}
 	}
 
