@@ -23,6 +23,11 @@
  *******************************************************************************/
 package com.squid.kraken.v4.auth;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -66,6 +71,27 @@ public class ConfigServlet extends HttpServlet {
 		logger.info("signup_url : " + KrakenClientConfig.getSignUpURL());
 		config.getServletContext().setAttribute("signup_url",
 				KrakenClientConfig.getSignUpURL());
+		
+		String version = null;
+		InputStream input = getServletContext().getResourceAsStream(
+				"/META-INF/MANIFEST.MF");
+		if (input != null) {
+			try {
+				Manifest manifest = new Manifest(input);
+				Attributes mainAttribs = manifest.getMainAttributes();
+				version += "{";
+				version += " \"version \" :  \""+mainAttribs.getValue("Built-Date") + " ("
+						+ mainAttribs.getValue("Revision") + ")";
+				version += " \",";
+				version += " \"build \" :  \""+mainAttribs.getValue("Implementation-Version");
+				version += " \"}";
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		logger.info("version : " + version);
+		config.getServletContext().setAttribute("version",
+				version);
 	}
 
 }

@@ -11,6 +11,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="favicon.ico"></link>
     
+    <!-- 
+    version : ${applicationScope.version}
+     -->
+    
 
     <!-- Le styles -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
@@ -21,6 +25,7 @@
     <!--[if lt IE 9]>
       <script src="../assets/js/html5shiv.js"></script>
     <![endif]-->
+    
                                
   </head>
 
