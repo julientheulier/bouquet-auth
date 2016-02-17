@@ -80,11 +80,11 @@ public class ConfigServlet extends HttpServlet {
 				Manifest manifest = new Manifest(input);
 				Attributes mainAttribs = manifest.getMainAttributes();
 				version = "{";
-				version += " \"build \" :  \""+mainAttribs.getValue("Built-Date") + " ("
+				version += " \"build\" : \""+mainAttribs.getValue("Built-Date") + " ("
 						+ mainAttribs.getValue("Revision") + ")";
-				version += " \",";
-				version += " \"version \" :  \""+mainAttribs.getValue("Version");
-				version += " \"}";
+				version += "\",";
+				version += " \"version\" :  \""+mainAttribs.getValue("Version");
+				version += "\"}";
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
