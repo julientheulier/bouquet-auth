@@ -140,7 +140,7 @@ public class LostServlet extends HttpServlet {
 			// create a POST method to execute the login request
 
 			URIBuilder builder = new URIBuilder(privateServerURL
-					+ "/admin/reset-user-pwd");
+					+ "/rs/reset-user-pwd");
 
 			String linkUrl = KrakenClientConfig
 					.get("public.url")
