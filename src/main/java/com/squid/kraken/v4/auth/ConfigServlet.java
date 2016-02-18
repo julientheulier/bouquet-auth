@@ -59,18 +59,6 @@ public class ConfigServlet extends HttpServlet {
 				+ KrakenClientConfig.getKrakenPublicServerURL());
 		config.getServletContext().setAttribute("server_url",
 				KrakenClientConfig.getKrakenPublicServerURL());
-
-		logger.info("console_url : " + KrakenClientConfig.getConsoleURL());
-		config.getServletContext().setAttribute("console_url",
-				KrakenClientConfig.getConsoleURL());
-
-		logger.info("signin_url : " + KrakenClientConfig.getSignInURL());
-		config.getServletContext().setAttribute("signin_url",
-				KrakenClientConfig.getSignInURL());
-
-		logger.info("signup_url : " + KrakenClientConfig.getSignUpURL());
-		config.getServletContext().setAttribute("signup_url",
-				KrakenClientConfig.getSignUpURL());
 		
 		String version = null;
 		InputStream input = getServletContext().getResourceAsStream(

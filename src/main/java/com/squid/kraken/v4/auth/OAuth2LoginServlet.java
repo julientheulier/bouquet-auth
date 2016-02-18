@@ -60,6 +60,8 @@ public class OAuth2LoginServlet extends HttpServlet {
 	private static final String RESPONSE_TYPE_TOKEN = "token";
 
 	private static final String LOGIN_JSP = "/login.jsp";
+	
+	private static final String ERROR_JSP = "/error.jsp";
 
 	private static final String ACCESS_TOKEN = "access_token";
 
@@ -122,25 +124,27 @@ public class OAuth2LoginServlet extends HttpServlet {
 	 */
 	private void showLogin(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException {
-
-		request.setAttribute(CUSTOMER_ID, request.getParameter(CUSTOMER_ID));
+		RequestDispatcher rd;
 
 		String redirectUri = request.getParameter(REDIRECT_URI);
-		if (redirectUri == null) {
-			redirectUri = KrakenClientConfig.getConsoleURL();
-		}
-		request.setAttribute(REDIRECT_URI, redirectUri);
-		request.setAttribute(RESPONSE_TYPE, request.getParameter(RESPONSE_TYPE));
-
 		String clientId = request.getParameter(CLIENT_ID);
-		if (clientId == null) {
-			clientId = KrakenClientConfig.get("signin.default.clientid",
-					"admin_console");
+		if (redirectUri == null) {
+			request.setAttribute(ERROR, "Invalid request : redirect_uri must be provided");
+			rd = getServletContext().getRequestDispatcher(
+					ERROR_JSP);
+		} else if (clientId == null) {
+			request.setAttribute(ERROR, "Invalid request : client_id must be provided");
+			rd = getServletContext().getRequestDispatcher(
+					ERROR_JSP);
+		} else {
+			request.setAttribute(CUSTOMER_ID, request.getParameter(CUSTOMER_ID));
+			request.setAttribute(REDIRECT_URI, redirectUri);
+			request.setAttribute(RESPONSE_TYPE, request.getParameter(RESPONSE_TYPE));
+			request.setAttribute(CLIENT_ID, clientId);
+	
+			rd = getServletContext().getRequestDispatcher(
+					LOGIN_JSP);
 		}
-		request.setAttribute(CLIENT_ID, clientId);
-
-		RequestDispatcher rd = getServletContext().getRequestDispatcher(
-				LOGIN_JSP);
 		rd.forward(request, response);
 	}
 

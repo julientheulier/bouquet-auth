@@ -47,15 +47,11 @@ public class LostServlet extends HttpServlet {
 
 	private static final String AN_ERROR_OCCURRED = "An error occurred";
 
-	private static final String RESPONSE_TYPE = "response_type";
-
 	private static final String LOST_JSP = "/lost.jsp";
 
 	private static final String ERROR = "error";
 
 	private static final String KRAKEN_UNAVAILABLE = "krakenUnavailable";
-
-	private static final String REDIRECT_URI = "redirect_uri";
 
 	private static final String EMAIL = "email";
 
@@ -95,24 +91,13 @@ public class LostServlet extends HttpServlet {
 	private void show(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		RequestDispatcher rd;
 		request.setAttribute(CUSTOMER_ID, request.getParameter(CUSTOMER_ID));
-
-		String redirectUri = request.getParameter(REDIRECT_URI);
-		if (redirectUri == null) {
-			redirectUri = KrakenClientConfig.getConsoleURL();
-		}
-		request.setAttribute(REDIRECT_URI, redirectUri);
-		request.setAttribute(RESPONSE_TYPE, request.getParameter(RESPONSE_TYPE));
-
-		String clientId = request.getParameter(CLIENT_ID);
-		if (clientId == null) {
-			clientId = KrakenClientConfig.get("signin.default.clientid",
-					"admin_console");
-		}
-		request.setAttribute(CLIENT_ID, clientId);
-
-		RequestDispatcher rd = getServletContext().getRequestDispatcher(
+		request.setAttribute(CLIENT_ID, KrakenClientConfig.get("signin.default.clientid",
+				"admin_console"));
+		rd = getServletContext().getRequestDispatcher(
 				LOST_JSP);
+		
 		rd.forward(request, response);
 	}
 

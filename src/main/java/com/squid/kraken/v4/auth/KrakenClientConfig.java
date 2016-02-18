@@ -145,18 +145,6 @@ public class KrakenClientConfig {
 
 	}
 
-	public static String getSignInURL() {
-		return get("signin.url", "https://api.squidsolutions.com/sign-in");
-	}
-
-	public static String getSignUpURL() {
-		return get("signup.url", "https://api.squidsolutions.com/sign-up");
-	}
-
-	public static String getConsoleURL() {
-		return get("console.url", "https://api.squidsolutions.com/console");
-	}
-
 	public static String getKrakenPublicServerURL() {
 		return get("kraken.api.url",
 				"https://api.squidsolutions.com/release/v4.2/rs");
