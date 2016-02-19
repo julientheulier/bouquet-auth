@@ -199,15 +199,11 @@ public class OAuth2LoginServlet extends HttpServlet {
 		if ((login == null) || (password == null)) {
 			showLogin(request, response);
 		} else {
+			// perform redirection
 			values.add(new BasicNameValuePair(LOGIN, login));
 			values.add(new BasicNameValuePair(PASSWORD, password));
 			post.setEntity(new UrlEncodedFormEntity(values));
-
 			try {
-				// execute the login request
-				Object auth = RequestHelper.processRequest(AuthCode.class, request, post);
-				
-				// perform redirection
 				String redirectUrl = request.getParameter(REDIRECT_URI).trim();
 				// T489 remove any trailing #
 				if (redirectUrl.endsWith("#")) {
@@ -215,7 +211,8 @@ public class OAuth2LoginServlet extends HttpServlet {
 				}
 				if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
 					// token type
-					AccessToken token = (AccessToken) auth;
+					// execute the login request
+					AccessToken token = RequestHelper.processRequest(AccessToken.class, request, post);
 					String tokenId = token.getId().getTokenId();
 					// redirect URL
 					if (redirectUrl.contains(ACCESS_TOKEN_PARAM_PATTERN)) {
@@ -229,7 +226,8 @@ public class OAuth2LoginServlet extends HttpServlet {
 					}
 				} else {
 					// auth code type
-					AuthCode codeObj = (AuthCode) auth;
+					// execute the login request
+					AuthCode codeObj = RequestHelper.processRequest(AuthCode.class, request, post);
 					String code = codeObj.getCode();
 					if (redirectUrl.contains(AUTH_CODE_PARAM_PATTERN)) {
 						// replace code parameter pattern
