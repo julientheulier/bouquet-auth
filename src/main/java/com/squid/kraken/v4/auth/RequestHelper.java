@@ -77,7 +77,8 @@ public class RequestHelper {
 		try {
 			HttpClient client = HttpClientBuilder.create().build();
 			executeCode = client.execute(req);
-		} catch (ConnectException e) { // Authentication server unavailable
+		} catch (ConnectException e) { 
+			// Authentication server unavailable
 			throw new ServerUnavailableException(e);
 		}
 
@@ -94,17 +95,23 @@ public class RequestHelper {
 
 		T fromJson;
 		Gson gson = new Gson();
-		if (executeCode.getStatusLine().getStatusCode() != 200) {
+		int statusCode = executeCode.getStatusLine().getStatusCode();
+		if (statusCode != 200) {
 			logger.info("Error : " + req.getURI() + " resulted in : "
 					+ result);
-			WebServicesException exception;
-			try {
-				exception = (WebServicesException) gson
-						.fromJson(result, WebServicesException.class);
-			} catch (Exception e) {
-				throw new ServiceException();
+			if ((statusCode >= 500) && (statusCode < 600)) {
+				// Authentication server unavailable
+				throw new ServerUnavailableException();
+			} else {
+				WebServicesException exception;
+				try {
+					exception = (WebServicesException) gson
+							.fromJson(result, WebServicesException.class);
+				} catch (Exception e) {
+					throw new ServiceException();
+				}
+				throw new ServiceException(exception);
 			}
-			throw new ServiceException(exception);
 		} else {
 			// forward to input page displaying ok message
 			try {
