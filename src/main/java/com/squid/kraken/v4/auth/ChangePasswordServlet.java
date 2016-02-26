@@ -37,8 +37,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,10 +149,8 @@ public class ChangePasswordServlet extends HttpServlet {
 			Gson gson = new Gson();
 			String json = gson.toJson(user);
 			StringEntity stringEntity = new StringEntity(json);
-			stringEntity.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE,
-					"application/json"));
+			stringEntity.setContentType("application/json");
 			req.setEntity(stringEntity);
-			req.setHeader("Content-type", "application/json");
 			user = RequestHelper.processRequest(User.class, request, req);
 			request.setAttribute("message", "Password updated");
 			request.setAttribute("user", user);
