@@ -56,7 +56,8 @@
 		Please set a new password for the account : ${user.email}
 		</div>
 		<input type="password" name="password" class="input-block-level" placeholder="New password">
-		<div>(It should contain at least a capital letter and a number.)</div>
+		<div>(It should be at least 8 characters long<br/>
+		and contain at least a capital letter and a number.)</div>
 		<div class="form-actions">
 			<button class="btn btn-primary" name="submit" type="submit">Submit</button>
 		</div>
