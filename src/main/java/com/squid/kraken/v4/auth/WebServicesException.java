@@ -37,6 +37,8 @@ public class WebServicesException {
     private String type;
 
     private String error;
+    
+    private String apiError;
 
     /**
      * @return the customers
@@ -97,4 +99,14 @@ public class WebServicesException {
     public void setError(String error) {
         this.error = error;
     }
+
+	public String getApiError() {
+		return apiError;
+	}
+
+	public void setApiError(String apiError) {
+		this.apiError = apiError;
+	}
+    
+    
 }

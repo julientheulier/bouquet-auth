@@ -99,19 +99,19 @@ public class RequestHelper {
 		if (statusCode != 200) {
 			logger.info("Error : " + req.getURI() + " resulted in : "
 					+ result);
-			if ((statusCode >= 500) && (statusCode < 600)) {
-				// Authentication server unavailable
-				throw new ServerUnavailableException();
-			} else {
-				WebServicesException exception;
-				try {
-					exception = (WebServicesException) gson
-							.fromJson(result, WebServicesException.class);
-				} catch (Exception e) {
+			WebServicesException exception;
+			try {
+				exception = (WebServicesException) gson
+						.fromJson(result, WebServicesException.class);
+			} catch (Exception e) {
+				if ((statusCode >= 500) && (statusCode < 600)) {
+					// Authentication server unavailable
+					throw new ServerUnavailableException();
+				} else {
 					throw new ServiceException();
 				}
-				throw new ServiceException(exception);
 			}
+			throw new ServiceException(exception);
 		} else {
 			// forward to input page displaying ok message
 			try {
