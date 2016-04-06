@@ -48,10 +48,6 @@
 	<c:if test="${(message == null)}">
 	<form class="sq-form acc_req_form" action="./password" method="post">
 		<input type="hidden" name="access_token" value="${access_token}" id="access_token"></input>
-		<input type="hidden" name="userId" value="${user.id.userId}" id="userId"></input>
-		<input type="hidden" name="userLogin" value="${user.login}" id="userLogin"></input>
-		<input type="hidden" name="userEmail" value="${user.email}" id="userEmail"></input>
-		<input type="hidden" name="access_token" value="${access_token}" id="access_token"></input>
 		<div>
 		Please set a new password for the account : ${user.email}
 		</div>

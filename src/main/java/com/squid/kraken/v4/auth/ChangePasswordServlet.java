@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.squid.kraken.v4.auth.model.User;
-import com.squid.kraken.v4.auth.model.UserPK;
 
 /**
  * A Servlet implementing Lost password procedure.<br>
@@ -90,11 +89,7 @@ public class ChangePasswordServlet extends HttpServlet {
 
 		// execute the login request
 		try {
-			URIBuilder builder = new URIBuilder(privateServerURL + "/rs/user");
-			builder.addParameter("access_token",
-					request.getParameter("access_token"));
-			HttpGet req = new HttpGet(builder.build());
-			User user = RequestHelper.processRequest(User.class, request, req);
+			User user = getUser(request);
 			request.setAttribute("user", user);
 			request.setAttribute("access_token",
 					request.getParameter("access_token"));
@@ -131,20 +126,16 @@ public class ChangePasswordServlet extends HttpServlet {
 	private void proceed(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException,
 			URISyntaxException {
-		
-		UserPK id = new UserPK();
-		id.setUserId(request.getParameter("userId"));
-		User user = new User(id, request.getParameter("userLogin"));
-		user.setEmail(request.getParameter("userEmail"));
-		user.setPassword(request.getParameter("password"));
-
-		// create a POST method to execute the change password request
-		URIBuilder builder = new URIBuilder(privateServerURL + "/rs/users/");
-		String token = request.getParameter("access_token");
-		builder.addParameter("access_token", token);
-
-		// execute the login request
 		try {
+			User user = getUser(request);
+			user.setPassword(request.getParameter("password"));
+
+			// create a POST method to execute the change password request
+			URIBuilder builder = new URIBuilder(privateServerURL + "/rs/users/");
+			String token = request.getParameter("access_token");
+			builder.addParameter("access_token", token);
+			
+			// execute the request
 			HttpPost req = new HttpPost(builder.build());
 			Gson gson = new Gson();
 			String json = gson.toJson(user);
@@ -172,7 +163,16 @@ public class ChangePasswordServlet extends HttpServlet {
 			request.setAttribute(ERROR, error);
 			show(request, response);
 		}
-
+	}
+	
+	private User getUser(HttpServletRequest request) throws URISyntaxException,
+			ServiceException, ServerUnavailableException, IOException {
+		URIBuilder builder = new URIBuilder(privateServerURL + "/rs/user");
+		builder.addParameter("access_token",
+				request.getParameter("access_token"));
+		HttpGet req = new HttpGet(builder.build());
+		User user = RequestHelper.processRequest(User.class, request, req);
+		return user;
 	}
 
 	@Override
