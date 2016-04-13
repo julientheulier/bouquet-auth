@@ -4,7 +4,7 @@
   <groupId>openbouquet</groupId>
   <artifactId>bouquet-auth</artifactId>
   <packaging>war</packaging>
-  <version>4.2.5</version>
+  <version>4.2.6-SNAPSHOT</version>
 	<name>Auth Webapp</name>
 	<url>http://maven.apache.org</url>
 	<dependencies>
