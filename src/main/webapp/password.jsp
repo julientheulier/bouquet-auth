@@ -49,7 +49,7 @@
 	<form class="sq-form acc_req_form" action="./password" method="post">
 		<input type="hidden" name="access_token" value="${access_token}" id="access_token"></input>
 		<div>
-		Please set a new password for the account : ${user.email}
+		Please set a new password for the account : <b>${user.login}</b>
 		</div>
 		<input type="password" name="password" class="input-block-level" placeholder="New password">
 		<p class="text-muted">
