@@ -2,12 +2,12 @@
  * Copyright © Squid Solutions, 2016
  *
  * This file is part of Open Bouquet software.
- *  
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation (version 3 of the License).
  *
- * There is a special FOSS exception to the terms and conditions of the 
+ * There is a special FOSS exception to the terms and conditions of the
  * licenses as they are applied to this program. See LICENSE.txt in
  * the directory of this program distribution.
  *
@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -48,9 +49,9 @@ public class RequestHelper {
 	private static final String STRING_XFF_HEADER = "X-Forwarded-For";
 
 	private static final Logger logger = LoggerFactory.getLogger(RequestHelper.class);
-	
-	public static <T> T processRequest(Class<T> type, HttpServletRequest request, HttpRequestBase req) throws IOException,
-			URISyntaxException, ServerUnavailableException, ServiceException {
+
+	public static <T> T processRequest(Class<T> type, HttpServletRequest request, HttpRequestBase req)
+			throws IOException, URISyntaxException, ServerUnavailableException, ServiceException, SSORedirectException {
 
 		// set client information to the header
 		String reqXFF = request.getHeader(STRING_XFF_HEADER);
@@ -68,7 +69,6 @@ public class RequestHelper {
 			postXFF = request.getRemoteHost();
 		}
 
-		
 		// add a new X-Forwarded-For header containing the remoteHost
 		req.addHeader(STRING_XFF_HEADER, postXFF);
 
@@ -77,14 +77,13 @@ public class RequestHelper {
 		try {
 			HttpClient client = HttpClientBuilder.create().build();
 			executeCode = client.execute(req);
-		} catch (ConnectException e) { 
+		} catch (ConnectException e) {
 			// Authentication server unavailable
 			throw new ServerUnavailableException(e);
 		}
 
 		// process the result
-		BufferedReader rd = new BufferedReader(new InputStreamReader(
-				executeCode.getEntity().getContent()));
+		BufferedReader rd = new BufferedReader(new InputStreamReader(executeCode.getEntity().getContent()));
 
 		StringBuffer resultBuffer = new StringBuffer();
 		String line = "";
@@ -97,21 +96,24 @@ public class RequestHelper {
 		Gson gson = new Gson();
 		int statusCode = executeCode.getStatusLine().getStatusCode();
 		if (statusCode != 200) {
-			logger.info("Error : " + req.getURI() + " resulted in : "
-					+ result);
-			WebServicesException exception;
-			try {
-				exception = (WebServicesException) gson
-						.fromJson(result, WebServicesException.class);
-			} catch (Exception e) {
-				if ((statusCode >= 500) && (statusCode < 600)) {
-					// Authentication server unavailable
-					throw new ServerUnavailableException();
-				} else {
-					throw new ServiceException();
+			if (executeCode.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
+				String redirectURL = executeCode.getFirstHeader("Location").getValue();
+				throw new SSORedirectException("SSO Redirect Exception", redirectURL);
+			} else {
+				logger.info("Error : " + req.getURI() + " resulted in : " + result);
+				WebServicesException exception;
+				try {
+					exception = gson.fromJson(result, WebServicesException.class);
+				} catch (Exception e) {
+					if ((statusCode >= 500) && (statusCode < 600)) {
+						// Authentication server unavailable
+						throw new ServerUnavailableException();
+					} else {
+						throw new ServiceException();
+					}
 				}
+				throw new ServiceException(exception);
 			}
-			throw new ServiceException(exception);
 		} else {
 			// forward to input page displaying ok message
 			try {
@@ -122,6 +124,5 @@ public class RequestHelper {
 		}
 		return fromJson;
 	}
-
 
 }

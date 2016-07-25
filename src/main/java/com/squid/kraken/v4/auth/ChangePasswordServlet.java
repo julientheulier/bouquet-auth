@@ -2,12 +2,12 @@
  * Copyright © Squid Solutions, 2016
  *
  * This file is part of Open Bouquet software.
- *  
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation (version 3 of the License).
  *
- * There is a special FOSS exception to the terms and conditions of the 
+ * There is a special FOSS exception to the terms and conditions of the
  * licenses as they are applied to this program. See LICENSE.txt in
  * the directory of this program distribution.
  *
@@ -60,8 +60,8 @@ public class ChangePasswordServlet extends HttpServlet {
 	private String privateServerURL;
 
 	@Override
-	protected void service(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException {
+	protected void service(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		String password = request.getParameter("password");
 		if (password != null) {
 			try {
@@ -78,21 +78,19 @@ public class ChangePasswordServlet extends HttpServlet {
 
 	/**
 	 * Display the input screen.
-	 * 
+	 *
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void show(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	private void show(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
 		// execute the login request
 		try {
 			User user = getUser(request);
 			request.setAttribute("user", user);
-			request.setAttribute("access_token",
-					request.getParameter("access_token"));
+			request.setAttribute("access_token", request.getParameter("access_token"));
 		} catch (ServerUnavailableException e1) {
 			logger.error(e1.getLocalizedMessage());
 			request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
@@ -109,23 +107,23 @@ public class ChangePasswordServlet extends HttpServlet {
 			}
 			logger.error(error);
 			request.setAttribute(ERROR, error);
+		} catch (SSORedirectException e) {
+			response.sendRedirect(e.getRedirectURL());
 		}
-		RequestDispatcher rd = getServletContext().getRequestDispatcher(
-				"/password.jsp");
+		RequestDispatcher rd = getServletContext().getRequestDispatcher("/password.jsp");
 		rd.forward(request, response);
 	}
 
 	/**
 	 * Perform the action via API calls.
-	 * 
+	 *
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void proceed(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException,
-			URISyntaxException {
+	private void proceed(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException, URISyntaxException {
 		try {
 			User user = getUser(request);
 			user.setPassword(request.getParameter("password"));
@@ -134,7 +132,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			URIBuilder builder = new URIBuilder(privateServerURL + "/rs/users/");
 			String token = request.getParameter("access_token");
 			builder.addParameter("access_token", token);
-			
+
 			// execute the request
 			HttpPost req = new HttpPost(builder.build());
 			Gson gson = new Gson();
@@ -145,8 +143,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			user = RequestHelper.processRequest(User.class, request, req);
 			request.setAttribute("message", "Password updated");
 			request.setAttribute("user", user);
-			RequestDispatcher rd = getServletContext().getRequestDispatcher(
-					"/password.jsp");
+			RequestDispatcher rd = getServletContext().getRequestDispatcher("/password.jsp");
 			rd.forward(request, response);
 		} catch (ServerUnavailableException e1) {
 			logger.error(e1.getLocalizedMessage());
@@ -162,14 +159,15 @@ public class ChangePasswordServlet extends HttpServlet {
 			}
 			request.setAttribute(ERROR, error);
 			show(request, response);
+		} catch (SSORedirectException error) {
+			response.sendRedirect(error.getRedirectURL());
 		}
 	}
-	
-	private User getUser(HttpServletRequest request) throws URISyntaxException,
-			ServiceException, ServerUnavailableException, IOException {
+
+	private User getUser(HttpServletRequest request)
+			throws URISyntaxException, ServiceException, ServerUnavailableException, IOException, SSORedirectException {
 		URIBuilder builder = new URIBuilder(privateServerURL + "/rs/user");
-		builder.addParameter("access_token",
-				request.getParameter("access_token"));
+		builder.addParameter("access_token", request.getParameter("access_token"));
 		HttpGet req = new HttpGet(builder.build());
 		User user = RequestHelper.processRequest(User.class, request, req);
 		return user;
@@ -179,8 +177,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		// setup the
-		privateServerURL = (String) config.getServletContext().getAttribute(
-				"privateServerURL");
+		privateServerURL = (String) config.getServletContext().getAttribute("privateServerURL");
 	}
 
 }
