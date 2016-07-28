@@ -2,12 +2,12 @@
  * Copyright © Squid Solutions, 2016
  *
  * This file is part of Open Bouquet software.
- *  
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation (version 3 of the License).
  *
- * There is a special FOSS exception to the terms and conditions of the 
+ * There is a special FOSS exception to the terms and conditions of the
  * licenses as they are applied to this program. See LICENSE.txt in
  * the directory of this program distribution.
  *
@@ -64,8 +64,8 @@ public class LostServlet extends HttpServlet {
 	private String privateServerURL;
 
 	@Override
-	protected void service(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException {
+	protected void service(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		if (request.getParameter(EMAIL) != null) {
 			// perform auth
 			try {
@@ -82,57 +82,49 @@ public class LostServlet extends HttpServlet {
 
 	/**
 	 * Display the input screen.
-	 * 
+	 *
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void show(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	private void show(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
 		RequestDispatcher rd;
 		request.setAttribute(CUSTOMER_ID, request.getParameter(CUSTOMER_ID));
-		request.setAttribute(CLIENT_ID, KrakenClientConfig.get("signin.default.clientid",
-				"admin_console"));
-		rd = getServletContext().getRequestDispatcher(
-				LOST_JSP);
-		
+		request.setAttribute(CLIENT_ID, KrakenClientConfig.get("signin.default.clientid", "admin_console"));
+		rd = getServletContext().getRequestDispatcher(LOST_JSP);
 		rd.forward(request, response);
 	}
 
 	/**
 	 * Perform the action via API calls.
-	 * 
+	 *
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void proceed(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException,
-			URISyntaxException {
+	private void proceed(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException, URISyntaxException {
 		// get login and pwd either from the request or from the session
 		String email = request.getParameter(EMAIL);
 
 		if (email == null) {
 			show(request, response);
 		} else {
-			
+
 			String customerId = request.getParameter(CUSTOMER_ID);
 			String clientId = request.getParameter(CLIENT_ID);
 
 			// create a POST method to execute the login request
 
-			URIBuilder builder = new URIBuilder(privateServerURL
-					+ "/rs/reset-user-pwd");
+			URIBuilder builder = new URIBuilder(privateServerURL + "/rs/reset-user-pwd");
 
-			String linkUrl = KrakenClientConfig
-					.get("public.url")
-					+ "/password?access_token={access_token}";
+			String linkUrl = KrakenClientConfig.get("public.url") + "/password?access_token={access_token}";
 			builder.addParameter("link_url", linkUrl);
 			builder.addParameter(EMAIL, email);
-			
+
 			if (StringUtils.isNotBlank(customerId)) {
 				builder.addParameter(CUSTOMER_ID, customerId);
 			}
@@ -160,6 +152,8 @@ public class LostServlet extends HttpServlet {
 				}
 				request.setAttribute(ERROR, error);
 				show(request, response);
+			} catch (SSORedirectException error) {
+				response.sendRedirect(error.getRedirectURL());
 			}
 		}
 	}
@@ -168,8 +162,7 @@ public class LostServlet extends HttpServlet {
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		// setup the
-		privateServerURL = (String) config.getServletContext().getAttribute(
-				"privateServerURL");
+		privateServerURL = (String) config.getServletContext().getAttribute("privateServerURL");
 	}
 
 }
