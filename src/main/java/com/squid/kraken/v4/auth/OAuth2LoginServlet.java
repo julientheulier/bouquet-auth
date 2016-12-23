@@ -246,8 +246,8 @@ public class OAuth2LoginServlet extends HttpServlet {
 		String redirectUri = null;
 		if (request.getParameter(REDIRECT_URI) != null) {
 			redirectUri = request.getParameter(REDIRECT_URI).trim();
-			values.add(new BasicNameValuePair(REDIRECT_URI, redirectUri));
 			isSso = isSso(request, redirectUri);
+			values.add(new BasicNameValuePair(REDIRECT_URI, redirectUri));
 		}
 
 		if (isSso == false && ((login == null) || (password == null))) {
@@ -301,6 +301,9 @@ public class OAuth2LoginServlet extends HttpServlet {
 						redirectUrl += (!redirectUrl.contains("?")) ? "?" : "&";
 						redirectUrl += AUTH_CODE + "=" + code;
 					}
+				}
+				if (isSso == true) {
+					redirectUrl = redirectUrl+"&auth=done";
 				}
 				response.sendRedirect(redirectUrl);
 			} catch (ServerUnavailableException e1) {
