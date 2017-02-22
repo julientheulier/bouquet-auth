@@ -258,9 +258,9 @@ public class OAuth2LoginServlet extends HttpServlet {
 				values.add(new BasicNameValuePair(PASSWORD, password));
 			} else {
 				String uri = request.getScheme() + "://" + request.getServerName()
-						+ ("http".equals(request.getScheme()) && request.getServerPort() == 80
-								|| "https".equals(request.getScheme()) && request.getServerPort() == 443 ? ""
-										: ":" + request.getServerPort());
+				+ ("http".equals(request.getScheme()) && request.getServerPort() == 80
+				|| "https".equals(request.getScheme()) && request.getServerPort() == 443 ? ""
+						: ":" + request.getServerPort());
 				post = new HttpPost(uri + V4_RS_SSO_TOKEN);
 				if (values != null) {
 					URL url = new URL(redirectUri);
@@ -274,6 +274,7 @@ public class OAuth2LoginServlet extends HttpServlet {
 				if (redirectUrl.endsWith("#")) {
 					redirectUrl = redirectUrl.substring(0, redirectUrl.length() - 1);
 				}
+				//If NPE at token.getId().getTokenId(), then missing response_type=code in the request
 				if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
 					// token type
 					// execute the login request
