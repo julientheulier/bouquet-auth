@@ -268,12 +268,12 @@ public class OAuth2LoginServlet extends HttpServlet {
 				}
 			}
 			post.setEntity(new UrlEncodedFormEntity(values));
+			String redirectUrl = redirectUri;
+			// T489 remove any trailing #
+			if (redirectUrl.endsWith("#")) {
+				redirectUrl = redirectUrl.substring(0, redirectUrl.length() - 1);
+			}
 			try {
-				String redirectUrl = redirectUri;
-				// T489 remove any trailing #
-				if (redirectUrl.endsWith("#")) {
-					redirectUrl = redirectUrl.substring(0, redirectUrl.length() - 1);
-				}
 				//If NPE at token.getId().getTokenId(), then missing response_type=code in the request
 				if (responseType.equals(RESPONSE_TYPE_TOKEN)) {
 					// token type
@@ -306,10 +306,13 @@ public class OAuth2LoginServlet extends HttpServlet {
 				if (isSso == true) {
 					redirectUrl = redirectUrl+"&auth=done";
 				}
+				//logger.info(isSso + " & send redirect to " + redirectUrl);
 				response.sendRedirect(redirectUrl);
 			} catch (ServerUnavailableException e1) {
 				// Authentication server unavailable
-				logger.error(e1.getLocalizedMessage());
+				logger.error(e1.getLocalizedMessage(), e1);
+				logger.error(post.getURI() +" from " + request.getRequestURI() + " with redirect " + redirectUrl);
+
 				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 				showLogin(request, response);
 				return;
