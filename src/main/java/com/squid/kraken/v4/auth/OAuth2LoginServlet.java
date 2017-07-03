@@ -258,8 +258,8 @@ public class OAuth2LoginServlet extends HttpServlet {
 				values.add(new BasicNameValuePair(PASSWORD, password));
 			} else {
 				String uri = request.getScheme() + "://" + request.getServerName()
-				+ ("http".equals(request.getScheme()) && request.getServerPort() == 80
-				|| "https".equals(request.getScheme()) && request.getServerPort() == 443 ? ""
+				+ ("http".equals(request.getScheme()) && request.getLocalPort() == 80
+				|| "https".equals(request.getScheme()) && request.getLocalPort() == 443 ? ""
 						: ":" + request.getServerPort());
 				post = new HttpPost(uri + V4_RS_SSO_TOKEN);
 				if (values != null) {
@@ -311,7 +311,7 @@ public class OAuth2LoginServlet extends HttpServlet {
 			} catch (ServerUnavailableException e1) {
 				// Authentication server unavailable
 				logger.error(e1.getLocalizedMessage(), e1);
-				logger.error(post.getURI() +" from " + request.getServerName()+":"+request.getServerPort()+ "/"+ request.getRequestURI() + " with redirect " + redirectUrl + " - " +request.getLocalPort() + " - " + request.getRemotePort());
+				logger.error(post.getURI() +" from " + request.getServerName()+":"+request.getLocalPort()+ "/"+ request.getRequestURI() + " with redirect " + redirectUrl + " - " +request.getServerPort() + " - " + request.getRemotePort());
 
 				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 				showLogin(request, response);
