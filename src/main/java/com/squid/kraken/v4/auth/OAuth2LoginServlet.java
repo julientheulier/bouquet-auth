@@ -311,7 +311,7 @@ public class OAuth2LoginServlet extends HttpServlet {
 			} catch (ServerUnavailableException e1) {
 				// Authentication server unavailable
 				logger.error(e1.getLocalizedMessage(), e1);
-				logger.error(post.getURI() +" from " + request.getRequestURI() + " with redirect " + redirectUrl);
+				logger.error(post.getURI() +" from " + request.getServerName()+":"+request.getServerPort()+ "/"+ request.getRequestURI() + " with redirect " + redirectUrl + " - " +request.getLocalPort() + " - " + request.getRemotePort());
 
 				request.setAttribute(KRAKEN_UNAVAILABLE, Boolean.TRUE);
 				showLogin(request, response);
