@@ -260,7 +260,7 @@ public class OAuth2LoginServlet extends HttpServlet {
 				String uri = request.getScheme() + "://" + request.getServerName()
 				+ ("http".equals(request.getScheme()) && request.getLocalPort() == 80
 				|| "https".equals(request.getScheme()) && request.getLocalPort() == 443 ? ""
-						: ":" + request.getServerPort());
+						: ":" + request.getLocalPort());
 				post = new HttpPost(uri + V4_RS_SSO_TOKEN);
 				if (values != null) {
 					URL url = new URL(redirectUri);
