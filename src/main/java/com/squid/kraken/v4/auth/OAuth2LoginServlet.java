@@ -304,7 +304,7 @@ public class OAuth2LoginServlet extends HttpServlet {
 					}
 				}
 				if (isSso == true) {
-					redirectUrl = redirectUrl+"&auth=done";
+					redirectUrl = redirectUrl+ ((!redirectUrl.contains("?")) ? "?" : "&")+"auth=done";
 				}
 				//logger.info(isSso + " & send redirect to " + redirectUrl);
 				response.sendRedirect(redirectUrl);
